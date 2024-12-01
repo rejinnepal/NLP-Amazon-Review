@@ -14,6 +14,10 @@ import seaborn as sns
 import io
 import base64
 from flask import Flask, render_template, request
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import classification_report, confusion_matrix
 
 # Download required NLTK data
 import nltk
@@ -81,6 +85,39 @@ def analyze_reviews(df):
     insights.append(f"Positive Reviews: {positive} ({positive/total*100:.1f}%)")
     insights.append(f"Negative Reviews: {negative} ({negative/total*100:.1f}%)")
     
+    # Train predictive model
+    vectorizer = TfidfVectorizer(max_features=1000, stop_words='english')
+    X = vectorizer.fit_transform(df['review_text'])
+    y = df['rating']
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    model = MultinomialNB()
+    model.fit(X_train, y_train)
+    
+    # Get model predictions and metrics
+    y_pred = model.predict(X_test)
+    classification_metrics = classification_report(y_test, y_pred, output_dict=True)
+    
+    # Create confusion matrix plot
+    plt.figure(figsize=(8, 6))
+    cm = confusion_matrix(y_test, y_pred)
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+    plt.title('Confusion Matrix')
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    confusion_matrix_plot = plot_to_base64(plt)
+    
+    # Get most important features for each class
+    feature_names = vectorizer.get_feature_names_out()
+    pos_features = sorted(zip(model.feature_log_prob_[1], feature_names))[-10:]
+    neg_features = sorted(zip(model.feature_log_prob_[0], feature_names))[-10:]
+    
+    # Add model insights
+    insights.append("\nModel Performance:")
+    insights.append(f"Overall Accuracy: {classification_metrics['accuracy']*100:.1f}%")
+    insights.append(f"Positive Review F1-Score: {classification_metrics['2']['f1-score']*100:.1f}%")
+    insights.append(f"Negative Review F1-Score: {classification_metrics['1']['f1-score']*100:.1f}%")
+    
     # Analyze sample of reviews
     sample_size = min(1000, len(df))
     sample = df.sample(n=sample_size, random_state=42)
@@ -122,22 +159,27 @@ def analyze_reviews(df):
         'summary': {
             'total': total,
             'positive': positive,
-            'negative': negative
+            'negative': negative,
+            'model_accuracy': classification_metrics['accuracy']
         },
         'insights': insights,
         'plots': {
-            'length_distribution': length_plot
+            'length_distribution': length_plot,
+            'confusion_matrix': confusion_matrix_plot
         },
         'linguistic_analysis': {
             'positive': {
                 'entities': FreqDist(pos_entities).most_common(10),
-                'bigrams': FreqDist(dict(pos_bigrams)).most_common(10)
+                'bigrams': FreqDist(dict(pos_bigrams)).most_common(10),
+                'predictive_features': pos_features
             },
             'negative': {
                 'entities': FreqDist(neg_entities).most_common(10),
-                'bigrams': FreqDist(dict(neg_bigrams)).most_common(10)
+                'bigrams': FreqDist(dict(neg_bigrams)).most_common(10),
+                'predictive_features': neg_features
             }
-        }
+        },
+        'model_metrics': classification_metrics
     }
 
 @app.route('/', methods=['GET'])

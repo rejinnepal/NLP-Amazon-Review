@@ -72,6 +72,48 @@
             </div>
         </div>
         
+        <!-- Model Performance -->
+        <div class="analysis-section">
+            <h2>Predictive Model Performance</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Confusion Matrix</h4>
+                    <img src="data:image/png;base64,{{ plots.confusion_matrix }}" class="img-fluid">
+                </div>
+                <div class="col-md-6">
+                    <h4>Model Metrics</h4>
+                    <ul class="list-group">
+                        <li class="list-group-item">Overall Accuracy: {{ "%.1f"|format(model_metrics.accuracy * 100) }}%</li>
+                        <li class="list-group-item">Positive Reviews F1-Score: {{ "%.1f"|format(model_metrics['2']['f1-score'] * 100) }}%</li>
+                        <li class="list-group-item">Negative Reviews F1-Score: {{ "%.1f"|format(model_metrics['1']['f1-score'] * 100) }}%</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Most Predictive Features -->
+        <div class="analysis-section">
+            <h2>Most Predictive Words</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Positive Indicators</h4>
+                    <ul class="list-group">
+                        {% for score, word in linguistic_analysis.positive.predictive_features %}
+                        <li class="list-group-item">{{ word }} ({{ "%.3f"|format(score) }})</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h4>Negative Indicators</h4>
+                    <ul class="list-group">
+                        {% for score, word in linguistic_analysis.negative.predictive_features %}
+                        <li class="list-group-item">{{ word }} ({{ "%.3f"|format(score) }})</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
         <a href="/" class="btn btn-primary">Analyze Another File</a>
     </div>
 </body>

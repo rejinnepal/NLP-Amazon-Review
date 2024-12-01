@@ -2,7 +2,7 @@ flask
 pandas
 numpy
 nltk
-scikit-learn
+scikit-learn>=1.0.0
 gensim
 matplotlib
 seaborn
