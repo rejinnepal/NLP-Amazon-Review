@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Amazon Reviews Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; }
+        .container { max-width: 800px; }
+        #loading {
+            display: none;
+            margin-top: 20px;
+        }
+        #fileInfo {
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">Amazon Reviews Analyzer</h1>
+        <form action="/analyze" method="post" enctype="multipart/form-data" id="analyzeForm">
+            <div class="mb-3">
+                <label for="file" class="form-label">Upload Reviews File (.txt)</label>
+                <input type="file" class="form-control" id="file" name="file" accept=".txt" required>
+                <small class="text-muted">Maximum file size: 200MB</small>
+                <div class="form-text">Large files may take a few minutes to process.</div>
+            </div>
+            <button type="submit" class="btn btn-primary" id="submitBtn">Analyze Reviews</button>
+        </form>
+
+        <!-- File Info Section -->
+        <div id="fileInfo" class="alert alert-info">
+            <h4>File Information:</h4>
+            <p id="fileName">Name: </p>
+            <p id="fileSize">Size: </p>
+            <p id="lineCount">Estimated Reviews: </p>
+        </div>
+
+        <!-- Loading Section -->
+        <div id="loading">
+            <div class="progress mb-3">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+            </div>
+            <div class="text-center" id="loadingText">
+                Initializing analysis...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Show file info section
+                const fileInfo = document.getElementById('fileInfo');
+                fileInfo.style.display = 'block';
+                
+                // Update file information
+                document.getElementById('fileName').textContent = `Name: ${file.name}`;
+                document.getElementById('fileSize').textContent = `Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+                
+                // Estimate number of reviews
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const text = e.target.result;
+                    const lineCount = text.split('\n').length;
+                    document.getElementById('lineCount').textContent = `Estimated Reviews: ${lineCount}`;
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        document.getElementById('analyzeForm').addEventListener('submit', function(e) {
+            // Show loading bar
+            const loading = document.getElementById('loading');
+            const submitBtn = document.getElementById('submitBtn');
+            const progressBar = document.querySelector('.progress-bar');
+            const loadingText = document.getElementById('loadingText');
+            
+            loading.style.display = 'block';
+            submitBtn.disabled = true;
+            
+            // Simulate progress
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) {
+                    clearInterval(interval);
+                    progress = 90;
+                }
+                progressBar.style.width = `${progress}%`;
+                
+                // Update loading text based on progress
+                if (progress < 30) {
+                    loadingText.textContent = 'Reading and processing reviews...';
+                } else if (progress < 60) {
+                    loadingText.textContent = 'Performing linguistic analysis...';
+                } else {
+                    loadingText.textContent = 'Generating insights and visualizations...';
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html> 

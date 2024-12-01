@@ -1,0 +1,10 @@
+flask
+pandas
+numpy
+nltk
+scikit-learn
+gensim
+matplotlib
+seaborn
+scipy
+werkzeug 

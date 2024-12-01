@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analysis Results</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; }
+        .container { max-width: 1000px; }
+        .analysis-section { margin-bottom: 40px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Review Analysis Results</h1>
+        
+        <!-- Basic Stats -->
+        <div class="analysis-section">
+            <h2>Key Insights</h2>
+            <ul class="list-group">
+                {% for insight in insights %}
+                <li class="list-group-item">{{ insight }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <!-- Length Distribution -->
+        <div class="analysis-section">
+            <h2>Review Length Distribution</h2>
+            <img src="data:image/png;base64,{{ plots.length_distribution }}" class="img-fluid">
+        </div>
+        
+        <!-- Linguistic Analysis -->
+        <div class="analysis-section">
+            <h2>Linguistic Analysis</h2>
+            
+            <div class="row">
+                <!-- Positive Reviews -->
+                <div class="col-md-6">
+                    <h3>Positive Reviews</h3>
+                    <h4>Common Entities</h4>
+                    <ul class="list-group">
+                        {% for entity, count in linguistic_analysis.positive.entities %}
+                        <li class="list-group-item">{{ entity[1] }} ({{ entity[0] }}): {{ count }}</li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <h4 class="mt-3">Common Phrases</h4>
+                    <ul class="list-group">
+                        {% for phrase, count in linguistic_analysis.positive.bigrams %}
+                        <li class="list-group-item">{{ phrase }}: {{ count }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <!-- Negative Reviews -->
+                <div class="col-md-6">
+                    <h3>Negative Reviews</h3>
+                    <h4>Common Entities</h4>
+                    <ul class="list-group">
+                        {% for entity, count in linguistic_analysis.negative.entities %}
+                        <li class="list-group-item">{{ entity[1] }} ({{ entity[0] }}): {{ count }}</li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <h4 class="mt-3">Common Phrases</h4>
+                    <ul class="list-group">
+                        {% for phrase, count in linguistic_analysis.negative.bigrams %}
+                        <li class="list-group-item">{{ phrase }}: {{ count }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <a href="/" class="btn btn-primary">Analyze Another File</a>
+    </div>
+</body>
+</html> 
