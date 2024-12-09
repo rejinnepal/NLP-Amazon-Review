@@ -18,6 +18,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import classification_report, confusion_matrix
+from scipy import stats
+import re
 
 # Download required NLTK data
 import nltk
@@ -155,6 +157,69 @@ def analyze_reviews(df):
         for bigram, count in review['common_bigrams']:
             neg_bigrams.append((' '.join(bigram), count))
     
+    # Hypothesis Testing Section
+    insights.append("\nHypothesis Testing:")
+    
+    # A & B) Analyze potentially fake/generic reviews
+    def get_review_specificity_score(text):
+        # Count specific indicators of authenticity
+        specific_details = len(re.findall(r'\d+(?:\.\d+)?', text))  # Numbers/measurements
+        product_specific = len(re.findall(r'quality|feature|design|material|performance|works?|used?', text, re.I))
+        personal_exp = len(re.findall(r'I|my|me|we|our|myself', text, re.I))
+        
+        # Indicators of generic content
+        generic_praise = len(re.findall(r'great|good|nice|awesome|amazing|excellent|best|perfect', text, re.I))
+        
+        return (specific_details + product_specific + personal_exp) / (generic_praise + 1)
+    
+    df['specificity_score'] = df['review_text'].apply(get_review_specificity_score)
+    df['word_count'] = df['review_text'].str.split().str.len()
+    df['is_short'] = df['word_count'] < 20  # Flag very short reviews
+    
+    # Plot specificity distribution
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x='rating', y='specificity_score', data=df)
+    plt.title('Review Specificity by Rating')
+    plt.xlabel('Rating')
+    plt.ylabel('Specificity Score')
+    specificity_plot = plot_to_base64(plt)
+    
+    # Analyze potentially fake reviews
+    suspicious_reviews = df[
+        (df['specificity_score'] < df['specificity_score'].quantile(0.25)) & 
+        (df['is_short'] | (df['word_count'] > df['word_count'].quantile(0.95)))
+    ]
+    
+    insights.append("\nA & B) Review Authenticity Analysis:")
+    insights.append(f"- Potentially generic/fake reviews detected: {len(suspicious_reviews)} ({len(suspicious_reviews)/len(df)*100:.1f}%)")
+    insights.append(f"- Average specificity score: {df['specificity_score'].mean():.2f}")
+    insights.append(f"- Very short reviews (<20 words): {df['is_short'].sum()} ({df['is_short'].mean()*100:.1f}%)")
+    
+    # C) Analyze customer service related reviews
+    service_keywords = r'refund|return|customer service|support|warranty|shipping|delivery'
+    df['mentions_service'] = df['review_text'].str.contains(service_keywords, case=False)
+    
+    service_stats = pd.crosstab(df['mentions_service'], df['rating'])
+    service_chi2 = stats.chi2_contingency(service_stats)
+    
+    service_positive_rate = df[df['mentions_service']]['rating'].mean()
+    overall_positive_rate = df['rating'].mean()
+    
+    insights.append("\nC) Customer Service Mention Analysis:")
+    insights.append(f"- Reviews mentioning service terms: {df['mentions_service'].sum()} ({df['mentions_service'].mean()*100:.1f}%)")
+    insights.append(f"- Positive rating rate with service mentions: {service_positive_rate:.2f}")
+    insights.append(f"- Overall positive rating rate: {overall_positive_rate:.2f}")
+    insights.append(f"- Statistical significance: p-value = {service_chi2[1]:.4f}")
+    if service_chi2[1] < 0.05:
+        insights.append("- Conclusion: Service-related reviews show significantly different rating patterns")
+        
+    # Add example suspicious reviews
+    if len(suspicious_reviews) > 0:
+        sample_suspicious = suspicious_reviews.sample(min(3, len(suspicious_reviews)))
+        insights.append("\nExample potentially generic/fake reviews:")
+        for _, review in sample_suspicious.iterrows():
+            insights.append(f"- '{review['review_text'][:100]}...' (Score: {review['specificity_score']:.2f})")
+    
     return {
         'summary': {
             'total': total,
@@ -165,7 +230,8 @@ def analyze_reviews(df):
         'insights': insights,
         'plots': {
             'length_distribution': length_plot,
-            'confusion_matrix': confusion_matrix_plot
+            'confusion_matrix': confusion_matrix_plot,
+            'specificity_distribution': specificity_plot
         },
         'linguistic_analysis': {
             'positive': {
@@ -179,7 +245,15 @@ def analyze_reviews(df):
                 'predictive_features': neg_features
             }
         },
-        'model_metrics': classification_metrics
+        'model_metrics': classification_metrics,
+        'hypothesis_testing': {
+            'suspicious_review_count': len(suspicious_reviews),
+            'service_mention_stats': {
+                'mention_count': int(df['mentions_service'].sum()),
+                'positive_rate': float(service_positive_rate),
+                'p_value': float(service_chi2[1])
+            }
+        }
     }
 
 @app.route('/', methods=['GET'])

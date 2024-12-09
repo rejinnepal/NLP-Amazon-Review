@@ -91,6 +91,27 @@
             </div>
         </div>
         
+        <!-- Review Authenticity Analysis -->
+        <div class="analysis-section">
+            <h2>Review Authenticity Analysis</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Review Specificity Distribution</h4>
+                    <img src="data:image/png;base64,{{ plots.specificity_distribution }}" class="img-fluid">
+                </div>
+                <div class="col-md-6">
+                    <h4>Key Findings</h4>
+                    <ul class="list-group">
+                        {% for insight in insights %}
+                            {% if "Review Authenticity Analysis" in insight or "Customer Service Mention Analysis" in insight %}
+                                <li class="list-group-item">{{ insight }}</li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
         <!-- Most Predictive Features -->
         <div class="analysis-section">
             <h2>Most Predictive Words</h2>
